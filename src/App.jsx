@@ -1,7 +1,11 @@
 import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import Home from "./pages/Home"
 import Users from "./pages/Users"
-import Admin from "./pages/Admin"
+import Admin from "./pages/admin_panel/AllUsers"
+import Department from "./pages/admin_panel/department"
+import Roles from "./pages/admin_panel/Roles"
+import Projects from "./pages/admin_panel/projects"
+import CompanyRegister from "./pages/admin_panel/Companies"
 
 function App() {
   const router = createBrowserRouter([
@@ -14,9 +18,26 @@ function App() {
       element: <Users />
     },
     {
-      path: '/admin',
+      path: '/admin/allusers',
       element: <Admin />
+    },
+    {
+      path: "/admin/department",
+      element: <Department />
+    },
+    {
+      path: "admin/roles",
+      element: <Roles />
+    },
+    {
+      path: "admin/projects",
+      element: <Projects />
+    },
+    {
+      path: "/admin/registercompany",
+      element: <CompanyRegister />
     }
+  
   ])
   return (
     <>
