@@ -2,9 +2,9 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import Home from "./pages/Home"
 import Users from "./pages/Users"
 import Admin from "./pages/admin_panel/AllUsers"
-import Department from "./pages/admin_panel/department"
+import Department from "./pages/admin_panel/Department"
 import Roles from "./pages/admin_panel/Roles"
-import Projects from "./pages/admin_panel/projects"
+import Projects from "./pages/admin_panel/Projects"
 import CompanyRegister from "./pages/admin_panel/Companies"
 
 function App() {

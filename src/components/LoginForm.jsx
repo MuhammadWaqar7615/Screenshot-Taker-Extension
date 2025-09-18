@@ -99,7 +99,7 @@ const LoginForm = ({ toggleForm }) => {
                 Password
               </label>
               <input
-                type="password"
+                type="password" 
                 id="password"
                 name="password"
                 className="mt-1 w-full p-2 text-black border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#202020]"
