@@ -4,6 +4,7 @@ export default function Sidebar() {
   const location = useLocation();
 
   const links = [
+    { name: "All companies", path: "/admin/companies" },
     { name: "All users", path: "/admin/allusers" },
     { name: "Department", path: "/admin/department" },
     { name: "Roles", path: "/admin/roles" },

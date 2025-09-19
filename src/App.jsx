@@ -6,6 +6,7 @@ import Department from "./pages/admin_panel/Department"
 import Roles from "./pages/admin_panel/Roles"
 import Projects from "./pages/admin_panel/Projects"
 import CompanyRegister from "./pages/admin_panel/Companies"
+import Companies from "./pages/admin_panel/Companies"
 
 function App() {
   const router = createBrowserRouter([
@@ -36,6 +37,10 @@ function App() {
     {
       path: "/admin/registercompany",
       element: <CompanyRegister />
+    },
+    {
+      path: "/admin/companies",
+      element: <Companies />
     }
   
   ])
