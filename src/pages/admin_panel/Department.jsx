@@ -4,7 +4,7 @@ import Sidebar from "../../components/Sidebar";
 // Firestore
 import {
   db,
-} from "../../config/Firebase";
+} from "../../config/firebase.js";
 import {
   collection,
   doc,

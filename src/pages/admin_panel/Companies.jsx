@@ -1,253 +1,283 @@
-import { useForm } from "react-hook-form";
-import { ToastContainer, toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
-import PhoneInput from "react-phone-input-2";
-import "react-phone-input-2/lib/style.css";
-import { useState } from "react";
 
-// ✅ Firebase imports
-import { db } from "../../config/Firebase"; 
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import {
+  collection,
+  getDocs,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+} from "firebase/firestore";
+import { db } from "../../config/firebase.js";
+import { FaEdit, FaTrash, FaCheck, FaTimes } from "react-icons/fa";
+import Sidebar from "../../components/Sidebar";
 
-export default function CompanyRegister() {
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-    reset,
-  } = useForm();
+export default function CompaniesPage() {
+  const [companies, setCompanies] = useState([]);
+  const [editingCompany, setEditingCompany] = useState(null);
+  const [editedData, setEditedData] = useState({});
+  const [addingCompany, setAddingCompany] = useState(false);
+  const [newCompany, setNewCompany] = useState({
+    logo: "",
+    companyName: "",
+    owner: "",
+    email: "",
+    phone: "",
+    address: "",
+    state: "",
+    country: "",
+    domain: "",
+  });
 
-  const [phone, setPhone] = useState("");
-  const [phoneError, setPhoneError] = useState(false);
-  const [countryPhoneError, setCountryPhoneError] = useState(""); 
-  const [logoFile, setLogoFile] = useState(null);
-  const [selectedCountry, setSelectedCountry] = useState(null);
+  // Fetch companies
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      const querySnapshot = await getDocs(collection(db, "companies"));
+      const companyList = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      }));
+      setCompanies(companyList);
+    };
+    fetchCompanies();
+  }, []);
 
-  const onSubmit = async (data) => {
-    if (!phone) {
-      setPhoneError(true);
-      return;
-    }
-    setPhoneError(false);
+  // Start editing
+  const handleEdit = (company) => {
+    setEditingCompany(company.id);
+    setEditedData(company);
+  };
 
-    const countryInput = data.country?.toLowerCase().trim();
-    const phoneCountryName = selectedCountry?.name?.toLowerCase();
+  // Save update
+  const handleSave = async (id) => {
+    const companyRef = doc(db, "companies", id);
+    await updateDoc(companyRef, { ...editedData, updatedAt: serverTimestamp() });
+    setCompanies(
+      companies.map((c) => (c.id === id ? { ...c, ...editedData } : c))
+    );
+    setEditingCompany(null);
+  };
 
-    if (countryInput && phoneCountryName && !phoneCountryName.includes(countryInput)) {
-      setCountryPhoneError(`Phone number must match selected country (${data.country})`);
-      return;
-    } else {
-      setCountryPhoneError(""); 
-    }
+  // Delete company
+  const handleDelete = async (id) => {
+    await deleteDoc(doc(db, "companies", id));
+    setCompanies(companies.filter((c) => c.id !== id));
+  };
 
-    try {
-      // ✅ Save data to Firestore
-      await addDoc(collection(db, "companies"), {
-        company_name: data.companyName,
-        email: data.email,
-        address: data.address,
-        city: data.city,
-        country: data.country,
-        state: data.state,
-        owner: data.owner,
-        phone: phone,
-        company_logo: logoFile ? logoFile.name : null, // 👈 abhi sirf file ka naam store ho raha hai
-        website: data.website,
-        created_at: serverTimestamp(),
-      });
-
-      toast.success("Company Registered Successfully!", {
-        position: "top-center",
-        autoClose: 3000,
-      });
-
-      reset();
-      setPhone("");
-      setLogoFile(null);
-    } catch (error) {
-      console.error("Error saving company:", error);
-      toast.error("Failed to register company. Try again!");
-    }
+  // Add new company
+  const handleAddCompany = async () => {
+    const docRef = await addDoc(collection(db, "companies"), {
+      ...newCompany,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp(),
+    });
+    setCompanies([...companies, { id: docRef.id, ...newCompany }]);
+    setAddingCompany(false);
+    setNewCompany({
+      logo: "",
+      companyName: "",
+      owner: "",
+      email: "",
+      phone: "",
+      address: "",
+      state: "",
+      country: "",
+      domain: "",
+    });
   };
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center bg-cover bg-center p-6"
-      style={{
-        backgroundImage:
-          "url('https://images.unsplash.com/photo-1521791136064-7986c2920216?auto=format&fit=crop&w=1350&q=80')",
-      }}
-    >
-      <div className="w-full max-w-2xl bg-white/90 backdrop-blur-md rounded-2xl shadow-2xl p-8">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6 italic">
-          Company Registration
-        </h2>
+    <div className="min-h-screen bg-gray-50 flex">
+      {/* Sidebar left */}
+      <Sidebar />
 
-        <form className="space-y-4" onSubmit={handleSubmit(onSubmit)}>
-          {/* Company Name */}
-          <div>
-            <input
-              type="text"
-              placeholder="Company Name"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none hover:shadow-md "
-              {...register("companyName", { required: "Company Name is required" })}
-            />
-            {errors.companyName && (
-              <p className="text-red-500 text-sm mt-1">{errors.companyName.message}</p>
-            )}
-          </div>
-
-          {/* Email */}
-          <div>
-            <input
-              type="email"
-              placeholder="Email"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none hover:shadow-md"
-              {...register("email", {
-                required: "Email is required",
-                pattern: { value: /[^@\s]+@[^@\s]+\.[^@\s]+/, message: "Invalid email" },
-              })}
-            />
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email.message}</p>
-            )}
-          </div>
-
-          {/* Logo */}
-          <div>
-            <label className="flex items-center justify-between w-full p-3 border rounded-lg cursor-pointer text-gray-500 hover:shadow-md">
-              <span className={logoFile ? "text-gray-900" : "text-gray-500"}>
-                {logoFile ? logoFile.name : " Upload Company Logo"}
-              </span>
-              <span className="bg-purple-100 border text-black hover:text-white text-sm px-3 py-1 rounded-md hover:bg-purple-700">
-                Choose File
-              </span>
-              <input
-                type="file"
-                accept="image/*"
-                className="hidden"
-                {...register("logo", { required: "Logo is required" })}
-                onChange={(e) => setLogoFile(e.target.files[0])}
-              />
-            </label>
-            {errors.logo && (
-              <p className="text-red-500 text-sm mt-1 ">{errors.logo.message}</p>
-            )}
-          </div>
-
-          {/* Address */}
-          <div>
-            <input
-              type="text"
-              placeholder="Address"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none hover:shadow-md"
-              {...register("address", { required: "Address is required" })}
-            />
-            {errors.address && (
-              <p className="text-red-500 text-sm mt-1">{errors.address.message}</p>
-            )}
-          </div>
-
-          {/* City */}
-          <div>
-            <input
-              type="text"
-              placeholder="City"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none hover:shadow-md"
-              {...register("city", { required: "City is required" })}
-            />
-            {errors.city && (
-              <p className="text-red-500 text-sm mt-1">{errors.city.message}</p>
-            )}
-          </div>
-
-          {/* Country */}
-          <div>
-            <input
-              type="text"
-              placeholder="Country"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none hover:shadow-md"
-              {...register("country", { required: "Country is required" })}
-            />
-            {errors.country && (
-              <p className="text-red-500 text-sm mt-1">{errors.country.message}</p>
-            )}
-          </div>
-
-          {/* State */}
-          <div>
-            <input
-              type="text"
-              placeholder="State"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none hover:shadow-md"
-              {...register("state", { required: "State is required" })}
-            />
-            {errors.state && (
-              <p className="text-red-500 text-sm mt-1">{errors.state.message}</p>
-            )}
-          </div>
-
-          {/* Owner */}
-          <div>
-            <input
-              type="text"
-              placeholder="Owner Name"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none hover:shadow-md"
-              {...register("owner", { required: "Owner name is required" })}
-            />
-            {errors.owner && (
-              <p className="text-red-500 text-sm mt-1">{errors.owner.message}</p>
-            )}
-          </div>
-
-          {/* Phone */}
-          <div>
-            <PhoneInput
-              country={"us"}
-              value={phone}
-              onChange={(value, country) => {
-                setPhone(value);
-                setSelectedCountry(country);
-              }}
-              inputClass="!w-full !p-3 !pl-12 !border !rounded-lg !focus:ring-2 !focus:ring-purple-500 hover:shadow-md"
-            />
-            {phoneError && (
-              <p className="text-red-500 text-sm mt-1">Phone number is required</p>
-            )}
-            {countryPhoneError && (
-              <p className="text-red-500 text-sm mt-1">{countryPhoneError}</p>
-            )}
-          </div>
-
-          {/* Website */}
-          <div>
-            <input
-              type="url"
-              placeholder="Website"
-              className="w-full p-3 border rounded-lg focus:ring-2 focus:ring-purple-500 outline-none hover:shadow-md"
-              {...register("website", {
-                required: "Website is required",
-                pattern: {
-                  value: /^(https?:\/\/)?([\w\-])+\.\w{2,}(\/\S*)?$/,
-                  message: "Invalid website URL",
-                },
-              })}
-            />
-            {errors.website && (
-              <p className="text-red-500 text-sm mt-1">{errors.website.message}</p>
-            )}
-          </div>
-
-          {/* Submit */}
+      {/* Main content */}
+      <div className="flex-1">
+        {/* Header */}
+        <div className="flex justify-between items-center mb-10 bg-white p-4 shadow">
+          <h1 className="text-2xl font-bold text-gray-800">Companies</h1>
           <button
-            type="submit"
-            className="w-full bg-purple-600 text-white py-3 rounded-lg font-semibold text-lg hover:bg-purple-700 transition duration-300 shadow-md cursor-pointer italic"
+            onClick={() => setAddingCompany(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition cursor-pointer"
           >
-            Register Company
+            Add Company
           </button>
-        </form>
+        </div>
 
-        <ToastContainer />
+        {/* Table */}
+        <div className="overflow-x-auto shadow rounded-lg mr-4 ml-4">
+          <table className="min-w-full text-sm text-left text-gray-700 border border-gray-300  bg-white">
+            <thead className="bg-gray-100 text-xs uppercase font-semibold text-gray-600">
+              <tr>
+                <th className="px-4 py-3 border border-gray-300">Logo</th>
+                <th className="px-4 py-3 border border-gray-300">Company Name</th>
+                <th className="px-4 py-3 border border-gray-300">Owner</th>
+                <th className="px-4 py-3 border border-gray-300">Email</th>
+                <th className="px-4 py-3 border border-gray-300">Phone</th>
+                <th className="px-4 py-3 border border-gray-300">Address</th>
+                <th className="px-4 py-3 border border-gray-300">State</th>
+                <th className="px-4 py-3 border border-gray-300">Country</th>
+                <th className="px-4 py-3 border border-gray-300">Domain</th>
+                <th className="px-4 py-3 border border-gray-300">Created At</th>
+                <th className="px-4 py-3 border border-gray-300">Updated At</th>
+                <th className="px-4 py-3 border border-gray-300">Actions</th>
+              </tr>
+            </thead>
+
+            <tbody className="divide-y divide-gray-200">
+              {/* Add Company Row */}
+              {addingCompany && (
+                <tr className="bg-green-50">
+                  <td className="px-4 py-3 text-center border border-gray-300">
+                    <input
+                      type="file"
+                      className="cursor-pointer"
+                      onChange={(e) =>
+                        setNewCompany({
+                          ...newCompany,
+                          logo: URL.createObjectURL(e.target.files[0]),
+                        })
+                      }
+                    />
+                    {newCompany.logo ? (
+                      <img
+                        src={newCompany.logo}
+                        alt="logo"
+                        className="w-12 h-12 mx-auto mt-2 rounded-full object-cover"
+                      />
+                    ) : newCompany.companyName ? (
+                      <div className="w-12 h-12 mx-auto mt-2 rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
+                        {newCompany.companyName.charAt(0).toUpperCase()}
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 mx-auto mt-2 rounded-full bg-gray-300"></div>
+                    )}
+                  </td>
+                  {[
+                    "companyName",
+                    "owner",
+                    "email",
+                    "phone",
+                    "address",
+                    "state",
+                    "country",
+                    "domain",
+                  ].map((field) => (
+                    <td key={field} className="px-4 py-3 border border-gray-300">
+                      <input
+                        type="text"
+                        placeholder={field}
+                        value={newCompany[field]}
+                        onChange={(e) =>
+                          setNewCompany({ ...newCompany, [field]: e.target.value })
+                        }
+                        className="w-full border rounded px-2 py-1"
+                      />
+                    </td>
+                  ))}
+                  <td className="px-4 py-3 border border-gray-300">N/A</td>
+                  <td className="px-4 py-3 border border-gray-300">N/A</td>
+                  <td className="px-4 py-3 flex gap-3 border border-gray-300">
+                    <button
+                      className="text-green-600 hover:text-green-800 cursor-pointer"
+                      onClick={handleAddCompany}
+                    >
+                      <FaCheck size={20} />
+                    </button>
+                    <button
+                      className="text-gray-600 hover:text-gray-800 cursor-pointer"
+                      onClick={() => setAddingCompany(false)}
+                    >
+                      <FaTimes size={20} />
+                    </button>
+                  </td>
+                </tr>
+              )}
+
+              {/* Company Rows */}
+              {companies.map((company) => (
+                <tr key={company.id} className="hover:bg-gray-50 transition">
+                  <td className="px-2 border border-gray-200 text-center">
+                    {company.logo ? (
+                      <img
+                        src={company.logo}
+                        alt="logo"
+                        className="w-12 h-12 mx-auto rounded-full object-cover"
+                      />
+                    ) : company.companyName ? (
+                      <div className="w-12 h-12 mx-auto rounded-full bg-blue-500 flex items-center justify-center text-white font-bold text-lg">
+                        {company.companyName.charAt(0).toUpperCase()}
+                      </div>
+                    ) : (
+                      <div className="w-12 h-12 mx-auto rounded-full bg-gray-300"></div>
+                    )}
+                  </td>
+
+                  {[
+                    "companyName",
+                    "owner",
+                    "email",
+                    "phone",
+                    "address",
+                    "state",
+                    "country",
+                    "domain",
+                  ].map((field) => (
+                    <td key={field} className="px-4 py-6 border border-gray-200">
+                      {editingCompany === company.id ? (
+                        <input
+                          type="text"
+                          value={editedData[field] || ""}
+                          onChange={(e) =>
+                            setEditedData({ ...editedData, [field]: e.target.value })
+                          }
+                          className="w-full border rounded px-2 py-1"
+                        />
+                      ) : (
+                        company[field] || "N/A"
+                      )}
+                    </td>
+                  ))}
+
+                  <td className="px-4 py-3 border border-gray-200">
+                    {company.createdAt?.toDate
+                      ? company.createdAt.toDate().toLocaleDateString()
+                      : "N/A"}
+                  </td>
+                  <td className="px-4 py-3 border border-gray-200">
+                    {company.updatedAt?.toDate
+                      ? company.updatedAt.toDate().toLocaleDateString()
+                      : "N/A"}
+                  </td>
+                  <td className="px-4 py-3 flex gap-3 border border-gray-200">
+                    {editingCompany === company.id ? (
+                      <button
+                        className="text-green-600 hover:text-green-800"
+                        onClick={() => handleSave(company.id)}
+                      >
+                        <FaCheck size={20} />
+                      </button>
+                    ) : (
+                      <button
+                        className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                        onClick={() => handleEdit(company)}
+                      >
+                        <FaEdit size={20} />
+                      </button>
+                    )}
+                    <button
+                      className="text-red-600 hover:text-red-800 cursor-pointer"
+                      onClick={() => handleDelete(company.id)}
+                    >
+                      <FaTrash size={20} />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
   );
