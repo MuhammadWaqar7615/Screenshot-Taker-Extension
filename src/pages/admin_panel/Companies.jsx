@@ -6,7 +6,7 @@ import "react-phone-input-2/lib/style.css";
 import { useState } from "react";
 
 // ✅ Firebase imports
-import { db } from "../../config/Firebase"; 
+import { db } from "../../config/firebase"; 
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 
 export default function CompanyRegister() {
