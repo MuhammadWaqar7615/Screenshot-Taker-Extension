@@ -2,11 +2,12 @@ import { createBrowserRouter, RouterProvider } from "react-router-dom"
 import Home from "./pages/Home"
 import Users from "./pages/Users"
 import Admin from "./pages/admin_panel/AllUsers"
-import Department from "./pages/admin_panel/department"
+import Department from "./pages/admin_panel/Department"
 import Roles from "./pages/admin_panel/Roles"
 import Projects from "./pages/admin_panel/projects"
 import CompanyRegister from "./pages/admin_panel/Companies"
 import Companies from "./pages/admin_panel/Companies"
+import Onboarding from "./pages/admin_panel/onboarding"
 
 function App() {
   const router = createBrowserRouter([
@@ -41,7 +42,11 @@ function App() {
     {
       path: "/admin/companies",
       element: <Companies />
-    }
+    },
+    {
+      path: "/admin/onboarding",
+      element: <Onboarding />
+    },
   
   ])
   return (
