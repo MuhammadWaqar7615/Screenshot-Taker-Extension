@@ -203,7 +203,7 @@ const SignupForm = ({ toggleForm }) => {
 
           <button
             type="submit"
-            className="w-full bg-gray-700 hover:bg-gray-800 text-white p-2 rounded-md hover:bg-[#111111] transition duration-200 hover:scale-103 cursor-pointer"
+            className="w-full bg-gray-700 text-white p-2 rounded-md hover:bg-[#111111] transition duration-200 hover:scale-103 cursor-pointer"
           >
             Sign Up
           </button>
