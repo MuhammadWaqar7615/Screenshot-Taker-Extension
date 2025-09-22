@@ -1,5 +1,4 @@
-// import { db } from "../config/Firebase";
-import { db } from "../config/firebase"
+import { db } from "../config/firebase";
 import { collection, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
 
 export const getAllUsers = async () => {

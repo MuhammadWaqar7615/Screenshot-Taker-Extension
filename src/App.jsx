@@ -7,6 +7,7 @@ import Roles from "./pages/admin_panel/Roles"
 import Projects from "./pages/admin_panel/Projects"
 import CompanyRegister from "./pages/admin_panel/Companies"
 import Companies from "./pages/admin_panel/Companies"
+import Onboarding from "./pages/admin_panel/onboarding"
 
 function App() {
   const router = createBrowserRouter([
@@ -41,7 +42,11 @@ function App() {
     {
       path: "/admin/companies",
       element: <Companies />
-    }
+    },
+    {
+      path: "/admin/onboarding",
+      element: <Onboarding />
+    },
   
   ])
   return (
