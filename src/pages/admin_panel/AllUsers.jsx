@@ -1,606 +1,358 @@
-// import React, { useState, useEffect } from "react";
-// import { useNavigate } from "react-router-dom";
-// import Sidebar from "../../components/Sidebar";
-// import {
-//   getAllUsers,
-//   updateUser,
-//   deleteUser,
-// } from "../../userServices/userService";
-
-// const Admin = () => {
-//   const navigate = useNavigate();
-//   const [users, setUsers] = useState([]);
-//   const [editingUserId, setEditingUserId] = useState(null);
-//   const [formData, setFormData] = useState({});
-//   const [loading, setLoading] = useState(true);
-//   const [searchTerm, setSearchTerm] = useState("");
-//   const [filterActive, setFilterActive] = useState("all");
-//   const [deleteConfirm, setDeleteConfirm] = useState(null);
-
-//   useEffect(() => {
-//     fetchUsers();
-//   }, []);
-
-//   const fetchUsers = async () => {
-//     try {
-//       setLoading(true);
-//       const userData = await getAllUsers();
-//       setUsers(userData);
-//     } catch (error) {
-//       console.error("Error fetching users:", error);
-//     } finally {
-//       setLoading(false);
-//     }
-//   };
-
-//   // Filter users based on search term and active status
-//   const filteredUsers = users.filter(user => {
-//     const matchesSearch = user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-//                           user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-    
-//     if (filterActive === "all") return matchesSearch;
-//     if (filterActive === "active") return matchesSearch && user.is_active;
-//     if (filterActive === "inactive") return matchesSearch && !user.is_active;
-    
-//     return matchesSearch;
-//   });
-
-//   const handleEdit = (user) => {
-//     setEditingUserId(user.id);
-//     setFormData({ ...user });
-//   };
-
-//   const handleCancel = () => {
-//     setEditingUserId(null);
-//     setFormData({});
-//   };
-
-//   const handleChange = (e) => {
-//     const { name, value, type } = e.target;
-//     setFormData((prev) => ({ 
-//       ...prev, 
-//       [name]: type === "checkbox" ? e.target.checked : value 
-//     }));
-//   };
-
-//   const handleSave = async (id) => {
-//     try {
-//       await updateUser(id, {
-//         ...formData,
-//         createdAt: formData.createdAt,
-//       });
-//       await fetchUsers();
-//       setEditingUserId(null);
-//     } catch (error) {
-//       console.error("Error updating user:", error);
-//     }
-//   };
-
-//   const handleDelete = async (id) => {
-//     try {
-//       await deleteUser(id);
-//       setUsers(users.filter((u) => u.id !== id));
-//       setDeleteConfirm(null);
-//     } catch (error) {
-//       console.error("Error deleting user:", error);
-//     }
-//   };
-
-//   const formatDate = (dateString) => {
-//     if (!dateString) return "N/A";
-    
-//     const date = new Date(dateString);
-//     return date.toLocaleDateString('en-US', {
-//       year: 'numeric',
-//       month: 'short',
-//       day: 'numeric'
-//     });
-//   };
-
-//   return (
-//     <div className="flex min-h-screen bg-gray-50">
-//       <Sidebar />
-
-//       {/* Main Content */}
-//       <main className="flex-1 overflow-auto p-6">
-//         <div className="mb-6">
-//           <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
-//           <p className="text-gray-600">Manage all users in the system</p>
-//         </div>
-
-//         {/* Controls Section */}
-//         <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-//           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-//             <div className="flex-1">
-//               <div className="relative">
-//                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-//                   <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-//                     <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-//                   </svg>
-//                 </div>
-//                 <input
-//                   type="text"
-//                   placeholder="Search users by name or email..."
-//                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//                   value={searchTerm}
-//                   onChange={(e) => setSearchTerm(e.target.value)}
-//                 />
-//               </div>
-//             </div>
-            
-//             <div className="flex flex-col sm:flex-row gap-3">
-//               <select
-//                 className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-//                 value={filterActive}
-//                 onChange={(e) => setFilterActive(e.target.value)}
-//               >
-//                 <option value="all">All Users</option>
-//                 <option value="active">Active Only</option>
-//                 <option value="inactive">Inactive Only</option>
-//                  <option value="inactive">My Company</option>
-
-//               </select>
-              
-//               <button
-//                 onClick={() => navigate("/admin/registercompany")}
-//                 className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center"
-//               >
-//                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-//                 </svg>
-//                 Add Company
-//               </button>
-              
-//               <button className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition flex items-center">
-//                 <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-//                 </svg>
-//                 Logout
-//               </button>
-//             </div>
-//           </div>
-//         </div>
-
-//         {/* Users Table */}
-//         <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-//           <div className="overflow-x-auto">
-//             {loading ? (
-//               <div className="p-12 text-center">
-//                 <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-//                 <p className="mt-2 text-gray-500">Loading users...</p>
-//               </div>
-//             ) : filteredUsers.length === 0 ? (
-//               <div className="p-12 text-center">
-//                 <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-//                 </svg>
-//                 <h3 className="mt-2 text-sm font-medium text-gray-900">No users found</h3>
-//                 <p className="mt-1 text-sm text-gray-500">Try adjusting your search or filter to find what you're looking for.</p>
-//               </div>
-//             ) : (
-//               <table className="min-w-full divide-y divide-gray-200">
-//                 <thead className="bg-gray-50">
-//                   <tr>
-//                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                       User
-//                     </th>
-//                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                       Contact
-//                     </th>
-//                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                       Status
-//                     </th>
-//                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                       Joining Date
-//                     </th>
-//                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                       Created
-//                     </th>
-//                     <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-//                       Actions
-//                     </th>
-//                   </tr>
-//                 </thead>
-//                 <tbody className="bg-white divide-y divide-gray-200">
-//                   {filteredUsers.map((user, index) => (
-//                     <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-//                       <td className="px-6 py-4 whitespace-nowrap">
-//                         <div className="flex items-center">
-//                           <div className="flex-shrink-0 h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
-//                             {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-//                           </div>
-//                           <div className="ml-4">
-//                             <div className="text-sm font-medium text-gray-900">
-//                               {editingUserId === user.id ? (
-//                                 <input
-//                                   type="text"
-//                                   name="name"
-//                                   value={formData.name || ""}
-//                                   onChange={handleChange}
-//                                   className="border border-gray-300 px-2 py-1 rounded text-sm w-full"
-//                                 />
-//                               ) : (
-//                                 user.name || "Unknown"
-//                               )}
-//                             </div>
-//                             <div className="text-sm text-gray-500">
-//                               {editingUserId === user.id ? (
-//                                 <input
-//                                   type="email"
-//                                   name="email"
-//                                   value={formData.email || ""}
-//                                   onChange={handleChange}
-//                                   className="border border-gray-300 px-2 py-1 rounded text-sm w-full mt-1"
-//                                 />
-//                               ) : (
-//                                 user.email || "No email"
-//                               )}
-//                             </div>
-//                           </div>
-//                         </div>
-//                       </td>
-//                       <td className="px-6 py-4 whitespace-nowrap">
-//                         <div className="text-sm text-gray-900">
-//                           {editingUserId === user.id ? (
-//                             <input
-//                               type="text"
-//                               name="phone"
-//                               value={formData.phone || ""}
-//                               onChange={handleChange}
-//                               className="border border-gray-300 px-2 py-1 rounded text-sm w-full"
-//                               placeholder="Phone number"
-//                             />
-//                           ) : (
-//                             user.phone || "N/A"
-//                           )}
-//                         </div>
-//                       </td>
-//                       <td className="px-6 py-4 whitespace-nowrap">
-//                         {editingUserId === user.id ? (
-//                           <label className="inline-flex items-center mt-1">
-//                             <input
-//                               type="checkbox"
-//                               name="is_active"
-//                               checked={formData.is_active || false}
-//                               onChange={handleChange}
-//                               className="rounded text-blue-600 focus:ring-blue-500"
-//                             />
-//                             <span className="ml-2 text-sm text-gray-700">
-//                               {formData.is_active ? "Active" : "Inactive"}
-//                             </span>
-//                           </label>
-//                         ) : (
-//                           <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-//                             {user.is_active ? "Active" : "Inactive"}
-//                           </span>
-//                         )}
-//                       </td>
-//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                         {editingUserId === user.id ? (
-//                           <input
-//                             type="date"
-//                             name="joining_at"
-//                             value={formData.joining_at || ""}
-//                             onChange={handleChange}
-//                             className="border border-gray-300 px-2 py-1 rounded text-sm"
-//                           />
-//                         ) : (
-//                           formatDate(user.joining_at)
-//                         )}
-//                       </td>
-//                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-//                         {formatDate(user.createdAt)}
-//                       </td>
-//                       <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-//                         {editingUserId === user.id ? (
-//                           <div className="flex justify-end space-x-2">
-//                             <button
-//                               onClick={() => handleSave(user.id)}
-//                               className="text-green-600 hover:text-green-900 p-1 rounded hover:bg-green-50"
-//                               title="Save changes"
-//                             >
-//                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
-//                               </svg>
-//                             </button>
-//                             <button
-//                               onClick={handleCancel}
-//                               className="text-gray-600 hover:text-gray-900 p-1 rounded hover:bg-gray-50"
-//                               title="Cancel editing"
-//                             >
-//                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12" />
-//                               </svg>
-//                             </button>
-//                           </div>
-//                         ) : (
-//                           <div className="flex justify-end space-x-2">
-//                             <button
-//                               onClick={() => handleEdit(user)}
-//                               className="text-blue-600 hover:text-blue-900 p-1 rounded hover:bg-blue-50"
-//                               title="Edit user"
-//                             >
-//                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-//                               </svg>
-//                             </button>
-//                             <button
-//                               onClick={() => setDeleteConfirm(user.id)}
-//                               className="text-red-600 hover:text-red-900 p-1 rounded hover:bg-red-50"
-//                               title="Delete user"
-//                             >
-//                               <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-//                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-//                               </svg>
-//                             </button>
-//                           </div>
-//                         )}
-//                       </td>
-//                     </tr>
-//                   ))}
-//                 </tbody>
-//               </table>
-//             )}
-//           </div>
-//         </div>
-
-//         {/* Delete Confirmation Modal */}
-//         {deleteConfirm && (
-//           <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center p-4 z-50">
-//             <div className="bg-white rounded-lg max-w-md w-full p-6 shadow-xl">
-//               <h3 className="text-lg font-medium text-gray-900 mb-2">Delete User</h3>
-//               <p className="text-gray-500 mb-4">
-//                 Are you sure you want to delete this user? This action cannot be undone.
-//               </p>
-//               <div className="flex justify-end space-x-3">
-//                 <button
-//                   onClick={() => setDeleteConfirm(null)}
-//                   className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"
-//                 >
-//                   Cancel
-//                 </button>
-//                 <button
-//                   onClick={() => handleDelete(deleteConfirm)}
-//                   className="px-4 py-2 border border-transparent rounded-md text-sm font-medium text-white bg-red-600 hover:bg-red-700"
-//                 >
-//                   Delete
-//                 </button>
-//               </div>
-//             </div>
-//           </div>
-//         )}
-//       </main>
-//     </div>
-//   );
-// };
-
-// export default Admin;
-
-
-import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
-import Sidebar from "../../components/Sidebar";
-import { getAllUsers, updateUser, deleteUser } from "../../userServices/userService";
+import React, { useState, useEffect, useMemo } from "react";
 import { db } from "../../config/firebase";
-import { collection, getDocs } from "firebase/firestore";
+import {
+  collection,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  onSnapshot,
+} from "firebase/firestore";
+import Sidebar from "../../components/Sidebar";
+import { FaEdit, FaTrash } from "react-icons/fa";
 
-const Admin = () => {
-  const navigate = useNavigate();
+const AllUsers = () => {
   const [users, setUsers] = useState([]);
-  const [companies, setCompanies] = useState([]);
-  const [selectedCompany, setSelectedCompany] = useState("");
+  const [loading, setLoading] = useState(true); // global loader for fetching
+  const [saving, setSaving] = useState(false); // global loader for saving
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    contact: "",
+    role: "",
+    department: "",
+  });
   const [editingUserId, setEditingUserId] = useState(null);
-  const [formData, setFormData] = useState({});
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterActive, setFilterActive] = useState("all");
-  const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [search, setSearch] = useState("");
+  const [roleFilter, setRoleFilter] = useState("");
+  const [deptFilter, setDeptFilter] = useState("");
 
+  // Real-time listener for users
   useEffect(() => {
-    fetchUsers();
-    fetchCompanies();
+    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
+      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+      setUsers(list);
+      setLoading(false);
+    });
+
+    return () => unsubscribe();
   }, []);
 
-  const fetchUsers = async () => {
+  // Unique roles and departments
+  const uniqueRoles = useMemo(
+    () =>
+      Array.from(
+        new Set(users.map((u) => u.role?.trim()).filter(Boolean))
+      ).sort(),
+    [users]
+  );
+
+  const uniqueDepartments = useMemo(
+    () =>
+      Array.from(
+        new Set(users.map((u) => u.department?.trim()).filter(Boolean))
+      ).sort(),
+    [users]
+  );
+
+  // Handle form input changes
+  const handleFormChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  // Generate Firebase-style UID
+  const generateUID = () => {
+    const chars =
+      "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+    let uid = "";
+    for (let i = 0; i < 28; i++) {
+      uid += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return uid;
+  };
+
+  // Add new user
+  const handleAddUser = async (e) => {
+    e.preventDefault();
+    setSaving(true);
     try {
-      setLoading(true);
-      const userData = await getAllUsers();
-      setUsers(userData);
-    } catch (error) {
-      console.error("Error fetching users:", error);
+      const uid = generateUID();
+      await setDoc(doc(db, "users", uid), {
+        ...formData,
+        uid,
+        status: "inactive",
+        createdAt: serverTimestamp(),
+      });
+      resetForm();
+    } catch (err) {
+      console.error("Error adding user:", err);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  const fetchCompanies = async () => {
-    try {
-      const querySnapshot = await getDocs(collection(db, "companies"));
-      const companyList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-      setCompanies(companyList);
-    } catch (error) {
-      console.error("Error fetching companies:", error);
-    }
-  };
-
-  const handleEdit = (user) => {
+  // Start editing a user
+  const startEdit = (user) => {
     setEditingUserId(user.id);
     setFormData({ ...user });
+    setShowAddForm(false);
   };
 
-  const handleCancel = () => {
-    setEditingUserId(null);
-    setFormData({});
-  };
-
-  const handleChange = (e) => {
-    const { name, value, type } = e.target;
-    setFormData((prev) => ({ 
-      ...prev, 
-      [name]: type === "checkbox" ? e.target.checked : value 
-    }));
-  };
-
-  const handleSave = async (id) => {
+  // Save edited user
+  const saveEdit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
     try {
-      await updateUser(id, { ...formData, createdAt: formData.createdAt });
-      await fetchUsers();
-      setEditingUserId(null);
-    } catch (error) {
-      console.error("Error updating user:", error);
+      await updateDoc(doc(db, "users", editingUserId), formData);
+      resetForm();
+    } catch (err) {
+      console.error("Error updating user:", err);
+    } finally {
+      setSaving(false);
     }
   };
 
+  // Delete user
   const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this user?")) return;
     try {
-      await deleteUser(id);
-      setUsers(users.filter((u) => u.id !== id));
-      setDeleteConfirm(null);
-    } catch (error) {
-      console.error("Error deleting user:", error);
+      setSaving(true);
+      await deleteDoc(doc(db, "users", id));
+    } catch (err) {
+      console.error("Error deleting user:", err);
+    } finally {
+      setSaving(false);
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  // Reset form
+  const resetForm = () => {
+    setEditingUserId(null);
+    setShowAddForm(false);
+    setFormData({
+      name: "",
+      email: "",
+      password: "",
+      contact: "",
+      role: "",
+      department: "",
+    });
   };
 
   // Filter users
-  const filteredUsers = users.filter(user => {
-    const matchesSearch =
-      user.name?.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      user.email?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    // Active status filter
-    if (filterActive === "active" && !user.is_active) return false;
-    if (filterActive === "inactive" && user.is_active) return false;
-
-    // Company filter
-    if (filterActive === "mycompany" && selectedCompany) {
-      return matchesSearch && user.companyId === selectedCompany; // Ensure user has companyId field
-    }
-
-    return matchesSearch;
-  });
+  const filteredUsers = users.filter(
+    (u) =>
+      (u.name?.toLowerCase().includes(search.toLowerCase()) ||
+        u.email?.toLowerCase().includes(search.toLowerCase())) &&
+      (roleFilter ? u.role === roleFilter : true) &&
+      (deptFilter ? u.department === deptFilter : true)
+  );
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
-      <Sidebar />
-      <main className="flex-1 overflow-auto p-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-800">User Management</h1>
-          <p className="text-gray-600">Manage all users in the system</p>
-        </div>
-
-        {/* Controls */}
-        <div className="bg-white rounded-lg shadow-sm p-4 mb-6">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div className="flex-1 relative">
-              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                <svg className="h-5 w-5 text-gray-400" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clipRule="evenodd" />
-                </svg>
-              </div>
-              <input
-                type="text"
-                placeholder="Search users by name or email..."
-                className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg w-full focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              {/* Main Filter Dropdown */}
-              <select
-                className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                value={filterActive}
-                onChange={(e) => {
-                  setFilterActive(e.target.value);
-                  setSelectedCompany(""); // Reset secondary dropdown
-                }}
-              >
-                <option value="all">All Users</option>
-                <option value="active">Active Only</option>
-                <option value="inactive">Inactive Only</option>
-                <option value="mycompany">By Company</option>
-              </select>
-
-              {/* Secondary dropdown for companies */}
-              {filterActive === "mycompany" && (
-                <select
-                  className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  value={selectedCompany}
-                  onChange={(e) => setSelectedCompany(e.target.value)}
-                >
-                  <option value="">Select Company</option>
-                  {companies.map((company) => (
-                    <option key={company.id} value={company.id}>
-                      {company.companyName}
-                    </option>
-                  ))}
-                </select>
-              )}
-
-              <button
-                onClick={() => navigate("/admin/registercompany")}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition flex items-center"
-              >
-                Add Company
-              </button>
-            </div>
+    <div className="flex min-h-screen bg-gray-900 text-gray-100 relative">
+      {/* Global Loader Overlay */}
+      {/* Global Loader Overlay */}
+      {(loading || saving) && (
+        <div className="absolute inset-0 backdrop-blur-xs flex flex-col items-center justify-center z-50">
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 rounded-full border-4 border-t-transparent border-blue-400 animate-spin"></div>
+            <div className="absolute inset-2 rounded-full border-4 border-t-transparent border-blue-600 animate-[spin_2.5s_linear_infinite]"></div>
           </div>
+          <p className="mt-4 text-gray-200 text-lg font-semibold">
+            {saving ? "Saving..." : "Loading..."}
+          </p>
         </div>
+      )}
+
+
+      <Sidebar />
+
+      <main className="flex-1 p-6 overflow-auto">
+        {/* Header */}
+        <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
+          <h1 className="text-3xl font-bold text-white">All Users</h1>
+          <button
+            onClick={() => {
+              if (showAddForm) {
+                resetForm(); // Cancel clears + closes
+              } else {
+                setShowAddForm(true); // Add User opens
+              }
+            }}
+            className={`px-4 py-2 rounded-lg shadow transition-colors ${showAddForm
+                ? "bg-red-600 hover:bg-red-700"
+                : "bg-blue-600 hover:bg-blue-700"
+              }`}
+          >
+            {showAddForm ? "Cancel" : "➕ Add User"}
+          </button>
+        </div>
+
+        {/* Filters */}
+        {!showAddForm && !editingUserId && (
+          <div className="flex flex-wrap gap-4 mb-6">
+            <input
+              type="text"
+              placeholder="Search by name or email..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="border border-gray-700 rounded px-3 py-2 w-64 bg-gray-800 text-white focus:ring-2 focus:ring-blue-400"
+            />
+            <select
+              value={roleFilter}
+              onChange={(e) => setRoleFilter(e.target.value)}
+              className="border border-gray-700 rounded px-3 py-2 bg-gray-800 text-white focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">All Roles</option>
+              {uniqueRoles.map((r) => (
+                <option key={r} value={r}>
+                  {r}
+                </option>
+              ))}
+            </select>
+            <select
+              value={deptFilter}
+              onChange={(e) => setDeptFilter(e.target.value)}
+              className="border border-gray-700 rounded px-3 py-2 bg-gray-800 text-white focus:ring-2 focus:ring-blue-400"
+            >
+              <option value="">All Departments</option>
+              {uniqueDepartments.map((d) => (
+                <option key={d} value={d}>
+                  {d}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+
+        {/* Add/Edit Form */}
+        {(showAddForm || editingUserId) && (
+          <form
+            onSubmit={editingUserId ? saveEdit : handleAddUser}
+            className="bg-gray-800 p-6 rounded-lg shadow-lg mb-6 grid grid-cols-1 md:grid-cols-2 gap-4"
+          >
+            <input
+              type="text"
+              name="name"
+              placeholder="Name"
+              value={formData.name}
+              onChange={handleFormChange}
+              required
+              className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400"
+            />
+            <input
+              type="email"
+              name="email"
+              placeholder="Email"
+              value={formData.email}
+              onChange={handleFormChange}
+              required
+              className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400"
+            />
+            {!editingUserId && (
+              <input
+                type="password"
+                name="password"
+                placeholder="Password"
+                value={formData.password}
+                onChange={handleFormChange}
+                required
+                className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400"
+              />
+            )}
+            <input
+              type="text"
+              name="contact"
+              placeholder="Contact"
+              value={formData.contact}
+              onChange={handleFormChange}
+              className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400"
+            />
+            <input
+              type="text"
+              name="role"
+              placeholder="Role"
+              value={formData.role}
+              onChange={handleFormChange}
+              className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400"
+            />
+            <input
+              type="text"
+              name="department"
+              placeholder="Department"
+              value={formData.department}
+              onChange={handleFormChange}
+              className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400"
+            />
+            <button
+              type="submit"
+              className="col-span-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+            >
+              {editingUserId ? "✅ Save Changes" : "✅ Save User"}
+            </button>
+          </form>
+        )}
 
         {/* Users Table */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            {loading ? (
-              <div className="p-12 text-center">
-                <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
-                <p className="mt-2 text-gray-500">Loading users...</p>
-              </div>
-            ) : filteredUsers.length === 0 ? (
-              <div className="p-12 text-center text-gray-500">No users found</div>
+        {!showAddForm && !editingUserId && (
+          <div className="bg-gray-800 rounded-lg shadow-lg overflow-x-auto">
+            {filteredUsers.length === 0 ? (
+              <p className="p-4 text-gray-300">No users found.</p>
             ) : (
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
+              <table className="min-w-full text-left border-collapse">
+                <thead className="bg-gray-700 text-gray-200">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Contact</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Joining Date</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="p-3">Name</th>
+                    <th className="p-3">Email</th>
+                    <th className="p-3">Department</th>
+                    <th className="p-3">Role</th>
+                    <th className="p-3">Status</th>
+                    <th className="p-3">Actions</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-medium">
-                            {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                            <div className="text-sm text-gray-500">{user.email}</div>
-                          </div>
+                <tbody>
+                  {filteredUsers.map((user, idx) => (
+                    <tr
+                      key={user.id}
+                      className={`${idx % 2 === 0 ? "bg-gray-900" : "bg-gray-800"
+                        } hover:bg-gray-700 transition-colors`}
+                    >
+                      <td className="p-3 flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold">
+                          {user.name?.charAt(0) || "U"}
                         </div>
+                        {user.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{user.phone || "N/A"}</td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                          {user.is_active ? "Active" : "Inactive"}
+                      <td className="p-3">{user.email}</td>
+                      <td className="p-3">{user.department}</td>
+                      <td className="p-3">{user.role}</td>
+                      <td className="p-3">
+                        <span
+                          className={`px-2 py-1 rounded ${user.status === "active"
+                              ? "bg-green-500 text-white"
+                              : "bg-red-500 text-white"
+                            }`}
+                        >
+                          {user.status}
                         </span>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{formatDate(user.joining_at)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm">{formatDate(user.createdAt)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                        <button onClick={() => handleEdit(user)} className="text-blue-600 hover:text-blue-900">Edit</button>
-                        <button onClick={() => setDeleteConfirm(user.id)} className="ml-2 text-red-600 hover:text-red-900">Delete</button>
+                      <td className="p-3 flex gap-2">
+                        <button
+                          onClick={() => startEdit(user)}
+                          className="text-blue-400 hover:text-blue-600 transition-colors"
+                        >
+                          <FaEdit />
+                        </button>
+                        <button
+                          onClick={() => handleDelete(user.id)}
+                          className="text-red-400 hover:text-red-600 transition-colors"
+                        >
+                          <FaTrash />
+                        </button>
                       </td>
                     </tr>
                   ))}
@@ -608,10 +360,10 @@ const Admin = () => {
               </table>
             )}
           </div>
-        </div>
+        )}
       </main>
     </div>
   );
 };
 
-export default Admin;
+export default AllUsers;
