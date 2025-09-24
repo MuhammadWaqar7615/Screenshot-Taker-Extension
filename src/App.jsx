@@ -8,6 +8,7 @@ import CompanyRegister from "./pages/admin_panel/Companies"
 import Companies from "./pages/admin_panel/Companies"
 import Onboarding from "./pages/admin_panel/onboarding"
 import Screenshots from "./pages/Screenshots"
+import UserDetail from "./pages/UserDetail"
 
 function App() {
   const router = createBrowserRouter([
@@ -16,7 +17,7 @@ function App() {
       element: <Home />
     },
     {
-      path: '/screenshots',
+      path: '/screenshots/:id',
       element: <Screenshots />
     },
     {
@@ -47,6 +48,10 @@ function App() {
       path: "/admin/onboarding",
       element: <Onboarding />
     },
+    {
+      path: "/userDetails/:id",
+      element: <UserDetail />
+    }
   
   ])
   return (
@@ -57,3 +62,5 @@ function App() {
 }
 
 export default App
+
+

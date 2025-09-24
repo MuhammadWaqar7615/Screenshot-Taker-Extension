@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo } from "react";
+import { Link } from "react-router-dom";
 import { db } from "../../config/firebase";
 import {
   collection,
@@ -8,12 +9,14 @@ import {
   doc,
   serverTimestamp,
   onSnapshot,
+  getDocs,
 } from "firebase/firestore";
 import Sidebar from "../../components/Sidebar";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
 const AllUsers = () => {
   const [users, setUsers] = useState([]);
+  const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true); // global loader for fetching
   const [saving, setSaving] = useState(false); // global loader for saving
   const [showAddForm, setShowAddForm] = useState(false);
@@ -24,6 +27,7 @@ const AllUsers = () => {
     contact: "",
     role: "",
     department: "",
+    cid: "", // new field for company
   });
   const [editingUserId, setEditingUserId] = useState(null);
   const [search, setSearch] = useState("");
@@ -39,6 +43,24 @@ const AllUsers = () => {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  // Fetch companies (one-time load)
+  useEffect(() => {
+    const fetchCompanies = async () => {
+      try {
+        const querySnapshot = await getDocs(collection(db, "companies"));
+        const list = querySnapshot.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+        setCompanies(list);
+      } catch (err) {
+        console.error("Error fetching companies:", err);
+      }
+    };
+
+    fetchCompanies();
   }, []);
 
   // Unique roles and departments
@@ -140,6 +162,7 @@ const AllUsers = () => {
       contact: "",
       role: "",
       department: "",
+      cid: "",
     });
   };
 
@@ -152,9 +175,14 @@ const AllUsers = () => {
       (deptFilter ? u.department === deptFilter : true)
   );
 
+  // Get company name from cid
+  const getCompanyName = (cid) => {
+    const company = companies.find((c) => c.cid === cid);
+    return company ? company.companyName : "N/A";
+  };
+
   return (
     <div className="flex min-h-screen bg-gray-900 text-gray-100 relative">
-      {/* Global Loader Overlay */}
       {/* Global Loader Overlay */}
       {(loading || saving) && (
         <div className="absolute inset-0 backdrop-blur-xs flex flex-col items-center justify-center z-50">
@@ -167,7 +195,6 @@ const AllUsers = () => {
           </p>
         </div>
       )}
-
 
       <Sidebar />
 
@@ -288,6 +315,32 @@ const AllUsers = () => {
               onChange={handleFormChange}
               className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400"
             />
+
+            {/* Company dropdown */}
+            {editingUserId ? (
+              <input
+                type="text"
+                value={getCompanyName(formData.cid)}
+                readOnly
+                className="border border-gray-600 p-2 rounded bg-gray-900 text-gray-400 cursor-not-allowed"
+              />
+            ) : (
+              <select
+                name="cid"
+                value={formData.cid}
+                onChange={handleFormChange}
+                required
+                className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400"
+              >
+                <option value="">Select Company</option>
+                {companies.map((c) => (
+                  <option key={c.cid} value={c.cid}>
+                    {c.companyName}
+                  </option>
+                ))}
+              </select>
+            )}
+
             <button
               type="submit"
               className="col-span-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
@@ -308,9 +361,11 @@ const AllUsers = () => {
                   <tr>
                     <th className="p-3">Name</th>
                     <th className="p-3">Email</th>
+                    <th className="p-3">Company</th>
                     <th className="p-3">Department</th>
                     <th className="p-3">Role</th>
                     <th className="p-3">Status</th>
+                    <th className="p-3">Screenshots</th>
                     <th className="p-3">Actions</th>
                   </tr>
                 </thead>
@@ -328,18 +383,31 @@ const AllUsers = () => {
                         {user.name}
                       </td>
                       <td className="p-3">{user.email}</td>
+                      <td className="p-3">{getCompanyName(user.cid)}</td>
                       <td className="p-3">{user.department}</td>
                       <td className="p-3">{user.role}</td>
                       <td className="p-3">
                         <span
-                          className={`px-2 py-1 rounded ${user.status === "active"
-                              ? "bg-green-500 text-white"
-                              : "bg-red-500 text-white"
+                          className={`px-2 py-1 rounded-full ${user.status === "active"
+                              ? "bg-green-500 text-white text-sm"
+                              : "bg-red-500 text-white text-sm"
                             }`}
                         >
                           {user.status}
                         </span>
                       </td>
+
+                      {/* Screenshots column */}
+                      <td className="p-3">
+                        <Link
+                          to={`/screenshots/${user.uid || user.id}`}
+                          className="text-blue-400 hover:underline"
+                        >
+                          View Screenshots
+                        </Link>
+                      </td>
+                      {console.log("uid", user.uid)}
+
                       <td className="p-3 flex gap-2">
                         <button
                           onClick={() => startEdit(user)}
