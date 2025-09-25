@@ -124,7 +124,7 @@ export default function Onboarding() {
           // ✅ Add timer for admin users
           if (user.role.toLowerCase() === "admin") {
             userData.timerExpiry = getFiveMinuteTimer();
-            userData.timerDuration = 300000;
+            userData.timer = 300000;
           }
 
           // ✅ Save user to Firestore
