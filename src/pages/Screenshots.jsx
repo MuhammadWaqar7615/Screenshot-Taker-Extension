@@ -503,7 +503,7 @@ const Screenshots = () => {
                   No Screenshots Available
                 </h3>
                 <p className="text-gray-400">
-                  This user hasn't uploaded any screenshots yet.
+                  This user doesn't have any screenshots yet.
                 </p>
               </div>
             </div>

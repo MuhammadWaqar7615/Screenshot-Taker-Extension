@@ -1,20 +1,7 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { db } from "../../config/firebase";
-import {
-  collection,
-  setDoc,
-  updateDoc,
-  deleteDoc,
-  doc,
-  serverTimestamp,
-  onSnapshot,
-  getDocs,
-  getDoc,
-  query,
-  where,
-  writeBatch,
-} from "firebase/firestore";
+import { collection, setDoc, updateDoc, deleteDoc, doc, serverTimestamp, onSnapshot, getDocs, getDoc, query, where, writeBatch} from "firebase/firestore";
 import Sidebar from "../../components/Sidebar";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
@@ -46,30 +33,65 @@ const AllUsers = () => {
   const [minutes, setMinutes] = useState("");
   const [seconds, setSeconds] = useState("");
 
-  useEffect(() => {
-    const unsubscribe = onSnapshot(collection(db, "users"), (snapshot) => {
-      const list = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
-      setUsers(list);
-      setLoading(false);
-    });
-    return () => unsubscribe();
-  }, []);
+  // Delete user helper
+  const deleteUserById = async (userId) => {
+    try {
+      const screenshotsRef = collection(db, "screenshots");
+      const screenshotsQuery = query(screenshotsRef, where("user_id", "==", userId));
+      const screenshotsSnapshot = await getDocs(screenshotsQuery);
 
+      if (screenshotsSnapshot.size > 0) {
+        const batch = writeBatch(db);
+        screenshotsSnapshot.forEach((docSnap) => batch.delete(docSnap.ref));
+        await batch.commit();
+      }
+
+      await deleteDoc(doc(db, "users", userId));
+    } catch (err) {
+      console.error("Error deleting user:", err);
+    }
+  };
+
+  // Load companies and users
   useEffect(() => {
-    const fetchCompanies = async () => {
+    let unsubscribe = () => { };
+    const init = async () => {
       try {
-        const querySnapshot = await getDocs(collection(db, "companies"));
-        const list = querySnapshot.docs.map((docSnap) => ({
+        // Fetch companies
+        const companySnapshot = await getDocs(collection(db, "companies"));
+        const companyList = companySnapshot.docs.map((docSnap) => ({
           cid: docSnap.id,
           id: docSnap.id,
           ...docSnap.data(),
         }));
-        setCompanies(list);
+        setCompanies(companyList);
+        const existingCompanyIds = new Set(companyList.map((c) => c.cid));
+
+        // Listen to users
+        unsubscribe = onSnapshot(collection(db, "users"), async (snapshot) => {
+          const userList = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+
+          // Delete users whose company is missing
+          const usersToDelete = userList.filter((u) => u.cid && !existingCompanyIds.has(u.cid));
+          if (usersToDelete.length > 0) {
+            for (const u of usersToDelete) {
+              await deleteUserById(u.id);
+              console.log(`Deleted user ${u.name || u.email} because company was removed`);
+            }
+          }
+
+          // Update users state
+          setUsers(userList.filter((u) => !u.cid || existingCompanyIds.has(u.cid)));
+          setLoading(false);
+        });
       } catch (err) {
-        console.error("Error fetching companies:", err);
+        console.error("Error initializing data:", err);
+        setLoading(false);
       }
     };
-    fetchCompanies();
+
+    init();
+    return () => unsubscribe();
   }, []);
 
   const uniqueRoles = useMemo(
@@ -137,7 +159,7 @@ const AllUsers = () => {
   const startEdit = (user) => {
     setEditingUserId(user.id);
     setOriginalUserData(user);
-    setFormData({ 
+    setFormData({
       name: user.name || "",
       email: user.email || "",
       password: user.password || "",
@@ -172,57 +194,40 @@ const AllUsers = () => {
 
   const deleteUserScreenshots = async (userId) => {
     try {
-      console.log(`🔍 Searching for screenshots with user_id: ${userId}`);
-      
       const screenshotsRef = collection(db, "screenshots");
       const screenshotsQuery = query(screenshotsRef, where("user_id", "==", userId));
       const screenshotsSnapshot = await getDocs(screenshotsQuery);
-      
-      console.log(`📊 Found ${screenshotsSnapshot.size} screenshots for user ${userId}`);
-      
+
       if (screenshotsSnapshot.size > 0) {
         const batch = writeBatch(db);
-        screenshotsSnapshot.forEach((screenshotDoc) => {
-          batch.delete(screenshotDoc.ref);
-          console.log(`🗑️ Marked screenshot for deletion: ${screenshotDoc.id}`);
-        });
-        
+        screenshotsSnapshot.forEach((screenshotDoc) => batch.delete(screenshotDoc.ref));
         await batch.commit();
-        console.log(`✅ Successfully deleted ${screenshotsSnapshot.size} screenshots`);
       }
-      
       return screenshotsSnapshot.size;
     } catch (error) {
-      console.error("❌ Error deleting user screenshots:", error);
+      console.error("Error deleting user screenshots:", error);
       throw error;
     }
   };
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this user? This will also delete all their screenshots permanently.")) return;
-    
+
     setSaving(true);
     try {
       const userToDelete = users.find(user => user.id === id);
-      if (!userToDelete) {
-        throw new Error("User not found");
-      }
-      
-      const userUid = userToDelete.uid;
-      console.log(`🗑️ Deleting user: ${id}, uid: ${userUid}`);
-      
-      const deletedScreenshotsCount = await deleteUserScreenshots(userUid);
-      
+      if (!userToDelete) throw new Error("User not found");
+
+      const deletedScreenshotsCount = await deleteUserScreenshots(userToDelete.uid);
       await deleteDoc(doc(db, "users", id));
-      console.log(`✅ User document deleted: ${id}`);
-      
+
       if (deletedScreenshotsCount > 0) {
         alert(`✅ User deleted successfully. ${deletedScreenshotsCount} screenshots were also deleted.`);
       } else {
         alert("✅ User deleted successfully. No screenshots found to delete.");
       }
     } catch (err) {
-      console.error("❌ Error deleting user:", err);
+      console.error("Error deleting user:", err);
       alert("❌ Error deleting user: " + err.message);
     } finally {
       setSaving(false);
@@ -248,8 +253,7 @@ const AllUsers = () => {
     const s = search.trim().toLowerCase();
     return users.filter(
       (u) =>
-        (u.name?.toLowerCase().includes(s) ||
-          u.email?.toLowerCase().includes(s)) &&
+        (u.name?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s)) &&
         (roleFilter ? u.role === roleFilter : true) &&
         (deptFilter ? u.department === deptFilter : true)
     );
@@ -264,46 +268,44 @@ const AllUsers = () => {
   const handleSetTimer = async (e) => {
     e.preventDefault();
     if (!selectedAdmin) return alert("Please select an admin.");
-    
+
     const h = parseInt(hours || 0, 10);
     const m = parseInt(minutes || 0, 10);
     const s = parseInt(seconds || 0, 10);
     const totalMs = (h * 3600 + m * 60 + s) * 1000;
-    
+
     if (totalMs <= 0) return alert("Please enter a valid duration.");
 
     setSaving(true);
     try {
       const adminUser = users.find((u) => u.id === selectedAdmin);
       if (!adminUser) throw new Error("Admin not found.");
-      
+
       const companyId = adminUser.cid;
 
       const batch = writeBatch(db);
 
       const companyRef = doc(db, "companies", companyId);
-      batch.update(companyRef, { 
+      batch.update(companyRef, {
         timer: totalMs,
         timerUpdatedAt: serverTimestamp(),
         timerUpdatedBy: adminUser.name || adminUser.email
       });
 
       const usersQuery = query(
-        collection(db, "users"), 
+        collection(db, "users"),
         where("cid", "==", companyId)
       );
       const usersSnapshot = await getDocs(usersQuery);
-      
-      let userCount = 0;
+
       usersSnapshot.forEach((userDoc) => {
         const userRef = doc(db, "users", userDoc.id);
         batch.update(userRef, { timer: totalMs });
-        userCount++;
       });
 
       await batch.commit();
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
     } catch (err) {
       console.error("Error setting timer:", err);
       alert("❌ Error setting timer: " + err.message);
@@ -334,6 +336,8 @@ const AllUsers = () => {
       <Sidebar />
 
       <main className="flex-1 p-6 overflow-auto">
+        {/* ...Rest of your JSX remains exactly the same... */}
+        {/* Add user form, filters, table, timer modal etc. */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
           <h1 className="text-3xl font-bold text-white">All Users</h1>
           <div className="flex gap-3">
@@ -349,11 +353,10 @@ const AllUsers = () => {
                 if (showAddForm || editingUserId) resetForm();
                 else setShowAddForm(true);
               }}
-              className={`px-4 py-2 rounded-lg shadow transition-colors cursor-pointer ${
-                (showAddForm || editingUserId)
+              className={`px-4 py-2 rounded-lg shadow transition-colors cursor-pointer ${(showAddForm || editingUserId)
                   ? "bg-red-600 hover:bg-red-700"
                   : "bg-blue-600 hover:bg-blue-700"
-              }`}
+                }`}
               disabled={saving}
             >
               {(showAddForm || editingUserId) ? "Cancel" : "➕ Add User"}
@@ -499,7 +502,7 @@ const AllUsers = () => {
               className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
               disabled={saving}
             />
-            
+
             <div className="relative">
               <input
                 type={showPassword ? "text" : "password"}
@@ -548,7 +551,7 @@ const AllUsers = () => {
               className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
               disabled={saving}
             />
-            
+
             <select
               name="cid"
               value={formData.cid}
@@ -598,9 +601,8 @@ const AllUsers = () => {
                   {filteredUsers.map((user, idx) => (
                     <tr
                       key={user.id}
-                      className={`${
-                        idx % 2 === 0 ? "bg-gray-900" : "bg-gray-800"
-                      } hover:bg-gray-700 transition-colors`}
+                      className={`${idx % 2 === 0 ? "bg-gray-900" : "bg-gray-800"
+                        } hover:bg-gray-700 transition-colors`}
                     >
                       <td className="p-3 flex items-center gap-2">
                         <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold">
@@ -614,11 +616,10 @@ const AllUsers = () => {
                       <td className="p-3">{user.role || "—"}</td>
                       <td className="p-3">
                         <span
-                          className={`px-2 py-1 rounded-full text-xs ${
-                            user.status === "active"
+                          className={`px-2 py-1 rounded-full text-xs ${user.status === "active"
                               ? "bg-green-600 text-white"
                               : "bg-gray-600 text-white"
-                          }`}
+                            }`}
                         >
                           {user.status || "inactive"}
                         </span>
@@ -661,5 +662,4 @@ const AllUsers = () => {
     </div>
   );
 };
-
 export default AllUsers;
