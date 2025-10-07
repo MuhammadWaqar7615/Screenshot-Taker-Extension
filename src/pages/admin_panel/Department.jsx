@@ -21,7 +21,7 @@ import {
 const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
   const [showForm, setShowForm] = useState(false);
   const [departments, setDepartments] = useState([]);
-  const [editingUid, setEditingUid] = useState(null);
+  const [editingDid, setEditingDid] = useState(null);
   const [editName, setEditName] = useState("");
   const [editDesc, setEditDesc] = useState("");
   const [actionOpen, setActionOpen] = useState(null);
@@ -52,7 +52,7 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
         const items = snap.docs.map((d) => {
           const data = d.data() || {};
           return {
-            uid: d.id,
+            did: d.id,
             ...data,
             created_at_local: data.created_at
               ? new Date(data.created_at.seconds * 1000).toLocaleString()
@@ -72,7 +72,7 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
 
   // Start editing row inline
   const handleEdit = (dept) => {
-    setEditingUid(dept.uid);
+    setEditingDid(dept.did);
     setEditName(dept.name || "");
     setEditDesc(dept.description || "");
     setActionOpen(null);
@@ -80,14 +80,14 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
 
   // Cancel editing
   const handleCancelEdit = () => {
-    setEditingUid(null);
+    setEditingDid(null);
     setEditName("");
     setEditDesc("");
     setActionOpen(null);
   };
 
   // Save editing
-  const handleSave = async (uid) => {
+  const handleSave = async (did) => {
     if (!editName.trim()) {
       alert("Department name is required");
       return;
@@ -95,7 +95,7 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
     
     try {
       setFormLoading(true);
-      const docRef = doc(db, "departments", uid);
+      const docRef = doc(db, "departments", did);
       await updateDoc(docRef, {
         name: editName,
         description: editDesc,
@@ -104,7 +104,7 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
 
       setDepartments((prev) =>
         prev.map((d) =>
-          d.uid === uid
+          d.did === did
             ? {
                 ...d,
                 name: editName,
@@ -115,7 +115,7 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
         )
       );
 
-      setEditingUid(null);
+      setEditingDid(null);
       setActionOpen(null);
     } catch (err) {
       console.error("Failed to update department:", err);
@@ -126,12 +126,12 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
   };
 
   // Delete a department
-  const handleDelete = async (uid) => {
+  const handleDelete = async (did) => {
     try {
       setFormLoading(true);
-      await deleteDoc(doc(db, "departments", uid));
-      setDepartments((prev) => prev.filter((d) => d.uid !== uid));
-      if (editingUid === uid) handleCancelEdit();
+      await deleteDoc(doc(db, "departments", did));
+      setDepartments((prev) => prev.filter((d) => d.did !== did));
+      if (editingDid === did) handleCancelEdit();
       setShowDeleteConfirm(null);
     } catch (err) {
       console.error("Failed to delete department:", err);
@@ -161,7 +161,7 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
 
       // Add to local state
       const newDept = {
-        uid: newDeptRef.id,
+        did: newDeptRef.id,
         name: newDeptName,
         description: newDeptDesc,
         company_id: resolvedCompanyId,
@@ -328,9 +328,9 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
                   </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {departments.map((dept) => (
-                      <tr key={dept.uid} className="hover:bg-gray-50 transition-colors">
+                      <tr key={dept.did} className="hover:bg-gray-50 transition-colors">
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {editingUid === dept.uid ? (
+                          {editingDid === dept.did ? (
                             <input
                               value={editName}
                               onChange={(e) => setEditName(e.target.value)}
@@ -343,7 +343,7 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
                         </td>
 
                         <td className="px-6 py-4">
-                          {editingUid === dept.uid ? (
+                          {editingDid === dept.did ? (
                             <input
                               value={editDesc}
                               onChange={(e) => setEditDesc(e.target.value)}
@@ -360,10 +360,10 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
                         </td>
 
                         <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                          {editingUid === dept.uid ? (
+                          {editingDid === dept.did ? (
                             <div className="flex items-center justify-end space-x-2">
                               <button
-                                onClick={() => handleSave(dept.uid)}
+                                onClick={() => handleSave(dept.did)}
                                 disabled={formLoading}
                                 className="text-green-600 hover:text-green-900 px-2 py-1 rounded hover:bg-green-50 transition-colors"
                               >
@@ -386,7 +386,7 @@ const DepartmentsPage = ({ companyId: propCompanyId = null }) => {
                                 Edit
                               </button>
                               <button
-                                onClick={() => setShowDeleteConfirm(dept.uid)}
+                                onClick={() => setShowDeleteConfirm(dept.did)}
                                 className="text-red-600 hover:text-red-900 px-2 py-1 rounded hover:bg-red-50 transition-colors"
                               >
                                 Delete
