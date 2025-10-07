@@ -184,40 +184,39 @@ export default function Companies() {
     return true;
   };
 
-const handleAddCompany = async (e) => {
-  e.preventDefault();
-  if (!validateForm()) return;
+  const handleAddCompany = async (e) => {
+    e.preventDefault();
+    if (!validateForm()) return;
 
-  try {
-    setSaving(true);
+    try {
+      setSaving(true);
 
-    // Create a new document reference with an auto-generated ID
-    const newDocRef = doc(collection(db, "companies"));
+      // Create a new document reference with an auto-generated ID
+      const newDocRef = doc(collection(db, "companies"));
 
-    const payload = {
-      cid: newDocRef.id, // ✅ assign document ID here
-      companyName: formData.companyName.trim(),
-      companyDescription: formData.companyDescription.trim(),
-      companyOwner: formData.companyOwner.trim(),
-      logoName: formData.logoPreview,
-      logoType: formData.logoType,
-      logoSize: formData.logoSize,
-      createdAt: serverTimestamp(),
-    };
+      const payload = {
+        cid: newDocRef.id,
+        companyName: formData.companyName.trim(),
+        companyDescription: formData.companyDescription.trim(),
+        companyOwner: formData.companyOwner.trim(),
+        logoName: formData.logoPreview,
+        logoType: formData.logoType,
+        logoSize: formData.logoSize,
+        createdAt: serverTimestamp(),
+      };
 
-    // Write document (single operation)
-    await setDoc(newDocRef, payload);
+      // Write document (single operation)
+      await setDoc(newDocRef, payload);
 
-    // Update UI
-    setCompanies((prev) => [...prev, { id: newDocRef.id, ...payload }]);
-    closeModal();
-  } catch (err) {
-    console.error("Add company error:", err);
-    alert("Error adding company: " + (err.message || err));
-  } finally {
-    setSaving(false);
-  }
-};
+      // ✅ No need to manually setCompanies() — onSnapshot handles this automatically
+      closeModal();
+    } catch (err) {
+      console.error("Add company error:", err);
+      alert("Error adding company: " + (err.message || err));
+    } finally {
+      setSaving(false);
+    }
+  };
 
 
   const handleUpdateCompany = async (e) => {
