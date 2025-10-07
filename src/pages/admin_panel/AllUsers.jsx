@@ -1,7 +1,20 @@
 import React, { useState, useEffect, useMemo } from "react";
 import { Link } from "react-router-dom";
 import { db } from "../../config/firebase";
-import { collection, setDoc, updateDoc, deleteDoc, doc, serverTimestamp, onSnapshot, getDocs, getDoc, query, where, writeBatch} from "firebase/firestore";
+import {
+  collection,
+  setDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  serverTimestamp,
+  onSnapshot,
+  getDocs,
+  getDoc,
+  query,
+  where,
+  writeBatch,
+} from "firebase/firestore";
 import Sidebar from "../../components/Sidebar";
 import { FaEdit, FaTrash } from "react-icons/fa";
 
@@ -33,11 +46,27 @@ const AllUsers = () => {
   const [minutes, setMinutes] = useState("");
   const [seconds, setSeconds] = useState("");
 
+  // Format timer (input expected in milliseconds)
+  const formatTimer = (ms) => {
+    if (!ms && ms !== 0) return "—";
+    const totalSeconds = Math.floor(ms / 1000);
+    const h = Math.floor(totalSeconds / 3600);
+    const m = Math.floor((totalSeconds % 3600) / 60);
+    const s = totalSeconds % 60;
+    // Always show HH:MM:SS for consistency (padStart ensures two digits)
+    return `${h.toString().padStart(2, "0")}:${m
+      .toString()
+      .padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
+  };
+
   // Delete user helper
   const deleteUserById = async (userId) => {
     try {
       const screenshotsRef = collection(db, "screenshots");
-      const screenshotsQuery = query(screenshotsRef, where("user_id", "==", userId));
+      const screenshotsQuery = query(
+        screenshotsRef,
+        where("user_id", "==", userId)
+      );
       const screenshotsSnapshot = await getDocs(screenshotsQuery);
 
       if (screenshotsSnapshot.size > 0) {
@@ -54,10 +83,10 @@ const AllUsers = () => {
 
   // Load companies and users
   useEffect(() => {
-    let unsubscribe = () => { };
+    let unsubscribe = () => {};
     const init = async () => {
       try {
-        // Fetch companies
+        // Fetch companies once
         const companySnapshot = await getDocs(collection(db, "companies"));
         const companyList = companySnapshot.docs.map((docSnap) => ({
           cid: docSnap.id,
@@ -68,22 +97,34 @@ const AllUsers = () => {
         const existingCompanyIds = new Set(companyList.map((c) => c.cid));
 
         // Listen to users
-        unsubscribe = onSnapshot(collection(db, "users"), async (snapshot) => {
-          const userList = snapshot.docs.map((docSnap) => ({ id: docSnap.id, ...docSnap.data() }));
+        unsubscribe = onSnapshot(
+          collection(db, "users"),
+          async (snapshot) => {
+            const userList = snapshot.docs.map((docSnap) => ({
+              id: docSnap.id,
+              ...docSnap.data(),
+            }));
 
-          // Delete users whose company is missing
-          const usersToDelete = userList.filter((u) => u.cid && !existingCompanyIds.has(u.cid));
-          if (usersToDelete.length > 0) {
-            for (const u of usersToDelete) {
-              await deleteUserById(u.id);
-              console.log(`Deleted user ${u.name || u.email} because company was removed`);
+            // Delete users whose company is missing
+            const usersToDelete = userList.filter(
+              (u) => u.cid && !existingCompanyIds.has(u.cid)
+            );
+            if (usersToDelete.length > 0) {
+              for (const u of usersToDelete) {
+                await deleteUserById(u.id);
+                console.log(
+                  `Deleted user ${u.name || u.email} because company was removed`
+                );
+              }
             }
-          }
 
-          // Update users state
-          setUsers(userList.filter((u) => !u.cid || existingCompanyIds.has(u.cid)));
-          setLoading(false);
-        });
+            // Update users state (only those with valid companies or no cid)
+            setUsers(
+              userList.filter((u) => !u.cid || existingCompanyIds.has(u.cid))
+            );
+            setLoading(false);
+          }
+        );
       } catch (err) {
         console.error("Error initializing data:", err);
         setLoading(false);
@@ -195,12 +236,17 @@ const AllUsers = () => {
   const deleteUserScreenshots = async (userId) => {
     try {
       const screenshotsRef = collection(db, "screenshots");
-      const screenshotsQuery = query(screenshotsRef, where("user_id", "==", userId));
+      const screenshotsQuery = query(
+        screenshotsRef,
+        where("user_id", "==", userId)
+      );
       const screenshotsSnapshot = await getDocs(screenshotsQuery);
 
       if (screenshotsSnapshot.size > 0) {
         const batch = writeBatch(db);
-        screenshotsSnapshot.forEach((screenshotDoc) => batch.delete(screenshotDoc.ref));
+        screenshotsSnapshot.forEach((screenshotDoc) =>
+          batch.delete(screenshotDoc.ref)
+        );
         await batch.commit();
       }
       return screenshotsSnapshot.size;
@@ -211,18 +257,27 @@ const AllUsers = () => {
   };
 
   const handleDelete = async (id) => {
-    if (!window.confirm("Are you sure you want to delete this user? This will also delete all their screenshots permanently.")) return;
+    if (
+      !window.confirm(
+        "Are you sure you want to delete this user? This will also delete all their screenshots permanently."
+      )
+    )
+      return;
 
     setSaving(true);
     try {
-      const userToDelete = users.find(user => user.id === id);
+      const userToDelete = users.find((user) => user.id === id);
       if (!userToDelete) throw new Error("User not found");
 
-      const deletedScreenshotsCount = await deleteUserScreenshots(userToDelete.uid);
+      const deletedScreenshotsCount = await deleteUserScreenshots(
+        userToDelete.uid
+      );
       await deleteDoc(doc(db, "users", id));
 
       if (deletedScreenshotsCount > 0) {
-        alert(`✅ User deleted successfully. ${deletedScreenshotsCount} screenshots were also deleted.`);
+        alert(
+          `✅ User deleted successfully. ${deletedScreenshotsCount} screenshots were also deleted.`
+        );
       } else {
         alert("✅ User deleted successfully. No screenshots found to delete.");
       }
@@ -253,7 +308,8 @@ const AllUsers = () => {
     const s = search.trim().toLowerCase();
     return users.filter(
       (u) =>
-        (u.name?.toLowerCase().includes(s) || u.email?.toLowerCase().includes(s)) &&
+        (u.name?.toLowerCase().includes(s) ||
+          u.email?.toLowerCase().includes(s)) &&
         (roleFilter ? u.role === roleFilter : true) &&
         (deptFilter ? u.department === deptFilter : true)
     );
@@ -289,13 +345,10 @@ const AllUsers = () => {
       batch.update(companyRef, {
         timer: totalMs,
         timerUpdatedAt: serverTimestamp(),
-        timerUpdatedBy: adminUser.name || adminUser.email
+        timerUpdatedBy: adminUser.name || adminUser.email,
       });
 
-      const usersQuery = query(
-        collection(db, "users"),
-        where("cid", "==", companyId)
-      );
+      const usersQuery = query(collection(db, "users"), where("cid", "==", companyId));
       const usersSnapshot = await getDocs(usersQuery);
 
       usersSnapshot.forEach((userDoc) => {
@@ -304,8 +357,7 @@ const AllUsers = () => {
       });
 
       await batch.commit();
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
+      await new Promise((resolve) => setTimeout(resolve, 1000));
     } catch (err) {
       console.error("Error setting timer:", err);
       alert("❌ Error setting timer: " + err.message);
@@ -336,8 +388,7 @@ const AllUsers = () => {
       <Sidebar />
 
       <main className="flex-1 p-6 overflow-auto">
-        {/* ...Rest of your JSX remains exactly the same... */}
-        {/* Add user form, filters, table, timer modal etc. */}
+        {/* Top controls */}
         <div className="flex flex-col md:flex-row items-start md:items-center justify-between mb-6 gap-4">
           <h1 className="text-3xl font-bold text-white">All Users</h1>
           <div className="flex gap-3">
@@ -353,17 +404,19 @@ const AllUsers = () => {
                 if (showAddForm || editingUserId) resetForm();
                 else setShowAddForm(true);
               }}
-              className={`px-4 py-2 rounded-lg shadow transition-colors cursor-pointer ${(showAddForm || editingUserId)
+              className={`px-4 py-2 rounded-lg shadow transition-colors cursor-pointer ${
+                showAddForm || editingUserId
                   ? "bg-red-600 hover:bg-red-700"
                   : "bg-blue-600 hover:bg-blue-700"
-                }`}
+              }`}
               disabled={saving}
             >
-              {(showAddForm || editingUserId) ? "Cancel" : "➕ Add User"}
+              {showAddForm || editingUserId ? "Cancel" : "➕ Add User"}
             </button>
           </div>
         </div>
 
+        {/* Timer Modal */}
         {showTimerModal && (
           <div className="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50">
             <div className="bg-gray-800 p-6 rounded-xl shadow-xl w-full max-w-md relative">
@@ -395,6 +448,7 @@ const AllUsers = () => {
                       </option>
                     ))}
                 </select>
+
                 <div className="flex gap-2">
                   <input
                     type="number"
@@ -426,6 +480,7 @@ const AllUsers = () => {
                     disabled={saving}
                   />
                 </div>
+
                 <button
                   type="submit"
                   disabled={saving}
@@ -438,6 +493,7 @@ const AllUsers = () => {
           </div>
         )}
 
+        {/* Filters */}
         {!showAddForm && !editingUserId && (
           <div className="flex flex-wrap gap-4 mb-6">
             <input
@@ -477,6 +533,7 @@ const AllUsers = () => {
           </div>
         )}
 
+        {/* Add/Edit form */}
         {(showAddForm || editingUserId) && (
           <form
             onSubmit={editingUserId ? saveEdit : handleAddUser}
@@ -489,6 +546,7 @@ const AllUsers = () => {
               value={formData.name}
               onChange={handleFormChange}
               required
+              maxLength={30}
               className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
               disabled={saving}
             />
@@ -498,6 +556,7 @@ const AllUsers = () => {
               placeholder="Email"
               value={formData.email}
               onChange={handleFormChange}
+              maxLength={30}
               required
               className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
               disabled={saving}
@@ -511,6 +570,8 @@ const AllUsers = () => {
                 value={formData.password}
                 onChange={handleFormChange}
                 required
+                minLength={6}
+                maxLength={30}
                 className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400 w-full disabled:opacity-50"
                 disabled={saving}
               />
@@ -524,15 +585,6 @@ const AllUsers = () => {
               </button>
             </div>
 
-            <input
-              type="text"
-              name="contact"
-              placeholder="Contact"
-              value={formData.contact}
-              onChange={handleFormChange}
-              className="border border-gray-600 p-2 rounded bg-gray-900 text-white focus:ring-2 focus:ring-blue-400 disabled:opacity-50"
-              disabled={saving}
-            />
             <input
               type="text"
               name="role"
@@ -573,61 +625,100 @@ const AllUsers = () => {
               disabled={saving}
               className="col-span-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {saving ? "⏳ Saving..." : (editingUserId ? "✅ Save Changes" : "✅ Save User")}
+              {saving ? "⏳ Saving..." : editingUserId ? "✅ Save Changes" : "✅ Save User"}
             </button>
           </form>
         )}
 
-        {!showAddForm && !editingUserId && (
-          <div className="bg-gray-800 rounded-lg shadow-lg overflow-x-auto">
-            {filteredUsers.length === 0 ? (
-              <p className="p-4 text-gray-300">No users found.</p>
-            ) : (
-              <table className="min-w-full text-left border-collapse">
+        {/* TABLE (no horizontal scroll; cells truncate with tooltip; vertical scroll only) */}
+        <div className="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          {filteredUsers.length === 0 ? (
+            <p className="p-4 text-gray-300">No users found.</p>
+          ) : (
+            <div className="max-h-[70vh] overflow-y-auto">
+              <table className="w-full table-fixed border-collapse text-left">
                 <thead className="bg-gray-700 text-gray-200">
                   <tr>
-                    <th className="p-3">Name</th>
-                    <th className="p-3">Email</th>
-                    <th className="p-3">Company</th>
-                    <th className="p-3">Department</th>
-                    <th className="p-3">Role</th>
-                    <th className="p-3">Status</th>
-                    <th className="p-3">Timer (seconds)</th>
-                    <th className="p-3">Screenshots</th>
-                    <th className="p-3">Actions</th>
+                    <th className="p-3 w-40 truncate whitespace-nowrap">Name</th>
+                    <th className="p-3 w-30 truncate whitespace-nowrap">Email</th>
+                    <th className="p-3 w-30 truncate whitespace-nowrap">Company</th>
+                    <th className="p-3 w-30 truncate whitespace-nowrap">Department</th>
+                    <th className="p-3 w-20 truncate whitespace-nowrap">Role</th>
+                    <th className="p-3 w-19 truncate whitespace-nowrap">Status</th>
+                    <th className="p-3 w-25 truncate whitespace-nowrap">Timer</th>
+                    <th className="p-3 w-30 truncate whitespace-nowrap">Screenshots</th>
+                    <th className="p-3 w-28 truncate whitespace-nowrap">Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {filteredUsers.map((user, idx) => (
                     <tr
                       key={user.id}
-                      className={`${idx % 2 === 0 ? "bg-gray-900" : "bg-gray-800"
-                        } hover:bg-gray-700 transition-colors`}
+                      className={`${
+                        idx % 2 === 0 ? "bg-gray-900" : "bg-gray-800"
+                      } hover:bg-gray-700 transition-colors`}
                     >
-                      <td className="p-3 flex items-center gap-2">
-                        <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold">
+                      <td
+                        className="p-3 flex items-center gap-2 truncate whitespace-nowrap overflow-hidden"
+                        title={user.name || "N/A"}
+                      >
+                        <div className="w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center text-white font-semibold flex-shrink-0">
                           {user.name?.charAt(0)?.toUpperCase() || "?"}
                         </div>
-                        {user.name}
+                        <span className="truncate">{user.name}</span>
                       </td>
-                      <td className="p-3">{user.email}</td>
-                      <td className="p-3">{getCompanyName(user.cid)}</td>
-                      <td className="p-3">{user.department || "—"}</td>
-                      <td className="p-3">{user.role || "—"}</td>
+
+                      <td
+                        className="p-3 truncate whitespace-nowrap overflow-hidden"
+                        title={user.email || "N/A"}
+                      >
+                        {user.email}
+                      </td>
+
+                      <td
+                        className="p-3 truncate whitespace-nowrap overflow-hidden"
+                        title={getCompanyName(user.cid)}
+                      >
+                        {getCompanyName(user.cid)}
+                      </td>
+
+                      <td
+                        className="p-3 truncate whitespace-nowrap overflow-hidden"
+                        title={user.department || "—"}
+                      >
+                        {user.department || "—"}
+                      </td>
+
+                      <td
+                        className="p-3 truncate whitespace-nowrap overflow-hidden"
+                        title={user.role || "—"}
+                      >
+                        {user.role || "—"}
+                      </td>
+
                       <td className="p-3">
                         <span
-                          className={`px-2 py-1 rounded-full text-xs ${user.status === "active"
+                          className={`px-2 py-1 rounded-full text-xs ${
+                            user.status === "active"
                               ? "bg-green-600 text-white"
                               : "bg-gray-600 text-white"
-                            }`}
+                          }`}
                         >
                           {user.status || "inactive"}
                         </span>
                       </td>
-                      <td className="p-3 font-mono">
-                        {user.timer ? Math.round(user.timer / 1000) : "—"}s
+
+                      <td
+                        className="p-3 font-mono truncate whitespace-nowrap overflow-hidden"
+                        title={formatTimer(user.timer)}
+                      >
+                        {formatTimer(user.timer)}
                       </td>
-                      <td className="p-3">
+
+                      <td
+                        className="p-3 truncate whitespace-nowrap overflow-hidden"
+                        title="View Screenshots"
+                      >
                         <Link
                           to={`/screenshots/${user.id}`}
                           className="text-blue-400 hover:underline cursor-pointer"
@@ -635,11 +726,13 @@ const AllUsers = () => {
                           View Screenshots
                         </Link>
                       </td>
+
                       <td className="p-3 flex gap-3">
                         <button
                           onClick={() => startEdit(user)}
                           className="text-yellow-400 hover:text-yellow-200 cursor-pointer disabled:opacity-50"
                           disabled={saving}
+                          title="Edit"
                         >
                           <FaEdit />
                         </button>
@@ -647,6 +740,7 @@ const AllUsers = () => {
                           onClick={() => handleDelete(user.id)}
                           className="text-red-500 hover:text-red-300 cursor-pointer disabled:opacity-50"
                           disabled={saving}
+                          title="Delete"
                         >
                           <FaTrash />
                         </button>
@@ -655,9 +749,9 @@ const AllUsers = () => {
                   ))}
                 </tbody>
               </table>
-            )}
-          </div>
-        )}
+            </div>
+          )}
+        </div>
       </main>
     </div>
   );
