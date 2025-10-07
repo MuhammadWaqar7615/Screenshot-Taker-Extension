@@ -184,32 +184,6 @@ export default function Companies() {
     return true;
   };
 
-  // const handleAddCompany = async (e) => {
-  //   e.preventDefault();
-  //   if (!validateForm()) return;
-
-  //   try {
-  //     setSaving(true);
-  //     const payload = {
-  //       companyName: formData.companyName.trim(),
-  //       companyDescription: formData.companyDescription.trim(),
-  //       companyOwner: formData.companyOwner.trim(),
-  //       logoName: formData.logoPreview,
-  //       logoType: formData.logoType,
-  //       logoSize: formData.logoSize,
-  //       createdAt: serverTimestamp(),
-  //     };
-  //     const ref = await addDoc(collection(db, "companies"), payload);
-  //     setCompanies((prev) => [...prev, { id: ref.id, ...payload }]);
-  //     closeModal();
-  //   } catch (err) {
-  //     console.error("Add company error:", err);
-  //     alert("Error adding company: " + (err.message || err));
-  //   } finally {
-  //     setSaving(false);
-  //   }
-  // };
-
 const handleAddCompany = async (e) => {
   e.preventDefault();
   if (!validateForm()) return;

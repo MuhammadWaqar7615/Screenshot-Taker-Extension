@@ -22,6 +22,7 @@ const AllUsers = () => {
   const [users, setUsers] = useState([]);
   const [companies, setCompanies] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [companiesLoaded, setCompaniesLoaded] = useState(false);
   const [saving, setSaving] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -83,57 +84,58 @@ const AllUsers = () => {
 
   // Load companies and users
   useEffect(() => {
-    let unsubscribe = () => {};
-    const init = async () => {
-      try {
-        // Fetch companies once
-        const companySnapshot = await getDocs(collection(db, "companies"));
-        const companyList = companySnapshot.docs.map((docSnap) => ({
-          cid: docSnap.id,
+  let unsubscribeUsers = () => {};
+  let unsubscribeCompanies = () => {};
+
+  try {
+    unsubscribeCompanies = onSnapshot(collection(db, "companies"), (companySnapshot) => {
+      const companyList = companySnapshot.docs.map((docSnap) => ({
+        cid: docSnap.id,
+        id: docSnap.id,
+        ...docSnap.data(),
+      }));
+      setCompanies(companyList);
+      const existingCompanyIds = new Set(companyList.map((c) => c.cid));
+
+      if (unsubscribeUsers) unsubscribeUsers();
+
+      unsubscribeUsers = onSnapshot(collection(db, "users"), async (snapshot) => {
+        const userList = snapshot.docs.map((docSnap) => ({
           id: docSnap.id,
           ...docSnap.data(),
         }));
-        setCompanies(companyList);
-        const existingCompanyIds = new Set(companyList.map((c) => c.cid));
 
-        // Listen to users
-        unsubscribe = onSnapshot(
-          collection(db, "users"),
-          async (snapshot) => {
-            const userList = snapshot.docs.map((docSnap) => ({
-              id: docSnap.id,
-              ...docSnap.data(),
-            }));
+        // ✅ Use the safe deletion check
+        if (companiesLoaded) {
+          const usersToDelete = userList.filter(
+            (u) => u.cid && !existingCompanyIds.has(u.cid)
+          );
 
-            // Delete users whose company is missing
-            const usersToDelete = userList.filter(
-              (u) => u.cid && !existingCompanyIds.has(u.cid)
-            );
-            if (usersToDelete.length > 0) {
-              for (const u of usersToDelete) {
-                await deleteUserById(u.id);
-                console.log(
-                  `Deleted user ${u.name || u.email} because company was removed`
-                );
-              }
+          if (usersToDelete.length > 0) {
+            for (const u of usersToDelete) {
+              await deleteUserById(u.id);
+              console.log(`Deleted user ${u.name || u.email} because company was removed`);
             }
-
-            // Update users state (only those with valid companies or no cid)
-            setUsers(
-              userList.filter((u) => !u.cid || existingCompanyIds.has(u.cid))
-            );
-            setLoading(false);
           }
-        );
-      } catch (err) {
-        console.error("Error initializing data:", err);
-        setLoading(false);
-      }
-    };
+        } else {
+          setCompaniesLoaded(true);
+        }
 
-    init();
-    return () => unsubscribe();
-  }, []);
+        setUsers(userList.filter((u) => !u.cid || existingCompanyIds.has(u.cid)));
+        setLoading(false);
+      });
+    });
+  } catch (err) {
+    console.error("Error initializing data:", err);
+    setLoading(false);
+  }
+
+  return () => {
+    if (unsubscribeUsers) unsubscribeUsers();
+    if (unsubscribeCompanies) unsubscribeCompanies();
+  };
+}, [companiesLoaded]);
+
 
   const uniqueRoles = useMemo(
     () =>
