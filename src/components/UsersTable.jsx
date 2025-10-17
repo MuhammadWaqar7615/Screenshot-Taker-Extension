@@ -76,7 +76,7 @@ const UsersTable = ({
 
                   {/* Email */}
                   <td
-                    className="p-3 overflow-hidden truncate whitespace-nowrap max-w-[200px] text-gray-300"
+                    className="p-3 overflow-hidden truncate whitespace-nowrap max-w-[150px] text-gray-300"
                     title={user.email || "N/A"}
                   >
                     {user.email}
@@ -84,7 +84,7 @@ const UsersTable = ({
 
                   {/* Company */}
                   <td
-                    className="p-3 overflow-hidden truncate whitespace-nowrap max-w-[180px] text-gray-300"
+                    className="p-3 overflow-hidden truncate whitespace-nowrap max-w-[150px] text-gray-300"
                     title={getCompanyName(user.cid)}
                   >
                     {getCompanyName(user.cid)}
@@ -100,7 +100,7 @@ const UsersTable = ({
 
                   {/* Role */}
                   <td
-                    className="p-3 overflow-hidden truncate whitespace-nowrap max-w-[120px] text-gray-300"
+                    className="p-3 overflow-hidden truncate whitespace-nowrap max-w-[100px] text-gray-300"
                     title={user.role || "—"}
                   >
                     {user.role || "—"}
@@ -108,7 +108,7 @@ const UsersTable = ({
 
                   {/* Skills */}
                   <td
-                    className="p-3 overflow-hidden truncate whitespace-nowrap max-w-[200px]"
+                    className="p-3 overflow-hidden truncate whitespace-nowrap max-w-[150px]"
                     title={
                       user.skills && user.skills.length > 0
                         ? user.skills

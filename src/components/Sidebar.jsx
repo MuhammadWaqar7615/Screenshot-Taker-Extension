@@ -45,15 +45,7 @@
 //sidebarrrrrrrrrrrrrrrrrrr
 
 import { Link, useLocation } from "react-router-dom";
-import {
-  FaBuilding,
-  FaUsers,
-  FaSitemap,
-  FaUserShield,
-  FaProjectDiagram,
-  FaTools,
-  FaTasks,
-} from "react-icons/fa";
+import { FaBuilding, FaUsers, FaSitemap, FaUserShield, FaProjectDiagram, FaTools, FaTasks, } from "react-icons/fa";
 
 export default function Sidebar() {
   const location = useLocation();
@@ -94,12 +86,12 @@ export default function Sidebar() {
       icon: <FaProjectDiagram />,
       roles: ["Site Admin", "Company Admin"],
     },
-    {
-      name: "Skills",
-      path: "/admin/skills",
-      icon: <FaTools />,
-      roles: ["Site Admin", "Company Admin"],
-    },
+    // {
+    //   name: "Skills",
+    //   path: "/admin/skills",
+    //   icon: <FaTools />,
+    //   roles: ["Site Admin", "Company Admin"],
+    // },
     {
       name: "Tasks",
       path: "/admin/tasks",
